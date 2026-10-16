@@ -1,5 +1,8 @@
 package com.uade.e_commerce.config;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -11,6 +14,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.uade.e_commerce.service.JwtAuthenticationFilter;
 
@@ -28,6 +34,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // Aplica la configuración CORS definida en corsConfigurationSource()
+            // para que el navegador permita las peticiones del front (localhost:5173)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -60,5 +69,25 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+        // Crea la configuración CORS que se aplicará a las solicitudes.
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Autoriza solicitudes provenientes del frontend en localhost:5173.
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        // Permite que el frontend use estos métodos HTTP (OPTIONS es el pre-flight).
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Acepta cualquier encabezado enviado en las solicitudes (ej: Authorization).
+        configuration.setAllowedHeaders(Collections.singletonList("*"));
+        // Permite enviar cookies y credenciales entre distintos orígenes.
+        configuration.setAllowCredentials(true);
+        // Crea el proveedor que asocia configuraciones CORS con rutas.
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Aplica esta configuración a todas las rutas de la aplicación.
+        source.registerCorsConfiguration("/**", configuration);
+        // Devuelve la configuración CORS para que Spring Security la utilice.
+        return source;
     }
 }
