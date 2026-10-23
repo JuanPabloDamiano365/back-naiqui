@@ -9,8 +9,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class UsuarioDTO {
 
     private Long id;
@@ -25,8 +23,22 @@ public class UsuarioDTO {
     @NotBlank(message = "La contraseña es obligatoria")
     private String password;
 
-    private RolUsuario rol = RolUsuario.USUARIO;
+    private RolUsuario rol;
 
     private String direccion;
     private String telefono;
+
+    public UsuarioDTO() {
+        this.rol = RolUsuario.USUARIO;
+    }
+
+    public UsuarioDTO(Long id, String nombre, String email, String password, RolUsuario rol, String direccion, String telefono) {
+        this.id = id;
+        this.nombre = nombre;
+        this.email = email;
+        this.password = password;
+        this.rol = rol != null ? rol : RolUsuario.USUARIO;
+        this.direccion = direccion;
+        this.telefono = telefono;
+    }
 }
