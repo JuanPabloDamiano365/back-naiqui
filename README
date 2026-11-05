@@ -1,1 +1,35 @@
+# TP Aplicaciones Interactivas UADE
 
+## Levantar todo con Docker
+
+Requisitos: Docker Desktop iniciado. El front debe estar en la carpeta hermana
+`../front-naiqui` (o sea, `TP/front-naiqui`).
+
+Desde la raíz de este repositorio:
+
+```bash
+docker compose up --build
+```
+
+Servicios:
+
+| Servicio | URL |
+|---|---|
+| Frontend (Vite) | http://localhost:5173 |
+| Backend (Spring Boot) | http://localhost:8080 |
+| MySQL | `localhost:3307` (usuario `root`, contraseña `root`, base `ecommerce_db`) |
+
+El backend se compila solo con Maven dentro de Docker y MySQL se inicializa con
+los datos de `src/main/resources/data.sql`.
+
+Para bajar todo:
+
+```bash
+docker compose down
+```
+
+Para borrar también los datos de MySQL:
+
+```bash
+docker compose down -v
+```
