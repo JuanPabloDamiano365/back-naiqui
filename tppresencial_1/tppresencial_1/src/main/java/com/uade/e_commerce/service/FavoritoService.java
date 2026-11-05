@@ -34,6 +34,7 @@ public class FavoritoService {
                 producto.getMarca(),
                 producto.getDescripcion(),
                 producto.getPrecio(),
+                producto.getPrecioOriginal(),
                 producto.getColor(),
                 producto.getStock(),
                 producto.getImagenUrl(),

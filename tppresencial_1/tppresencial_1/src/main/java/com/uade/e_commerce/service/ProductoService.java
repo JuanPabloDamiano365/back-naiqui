@@ -31,6 +31,7 @@ public class ProductoService {
         dto.setMarca(producto.getMarca());
         dto.setDescripcion(producto.getDescripcion());
         dto.setPrecio(producto.getPrecio());
+        dto.setPrecioOriginal(producto.getPrecioOriginal());
         dto.setColor(producto.getColor());
         dto.setStock(producto.getStock());
         dto.setImagenUrl(producto.getImagenUrl());
@@ -74,6 +75,7 @@ public class ProductoService {
         producto.setMarca(dto.getMarca());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
+        producto.setPrecioOriginal(dto.getPrecioOriginal());
         producto.setColor(dto.getColor());
         producto.setStock(dto.getStock());
         producto.setImagenUrl(dto.getImagenUrl());
@@ -94,6 +96,7 @@ public class ProductoService {
         producto.setMarca(dto.getMarca());
         producto.setDescripcion(dto.getDescripcion());
         producto.setPrecio(dto.getPrecio());
+        producto.setPrecioOriginal(dto.getPrecioOriginal());
         producto.setColor(dto.getColor());
         producto.setStock(dto.getStock());
         producto.setImagenUrl(dto.getImagenUrl());

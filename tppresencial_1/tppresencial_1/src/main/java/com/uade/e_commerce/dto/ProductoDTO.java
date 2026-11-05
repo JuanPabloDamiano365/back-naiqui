@@ -26,6 +26,9 @@ public class ProductoDTO {
     @Positive(message = "El precio debe ser mayor a 0")
     private Double precio;
 
+    @Positive(message = "El precio original debe ser mayor a 0")
+    private Double precioOriginal;
+
     private String color;
 
     @NotNull(message = "El stock es obligatorio")

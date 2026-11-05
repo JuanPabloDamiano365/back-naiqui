@@ -18,4 +18,5 @@ public class PedidoDTO {
     private String estado;
     private Double total;
     private List<ItemPedidoDTO> items;
+    private String metodoPago;
 }

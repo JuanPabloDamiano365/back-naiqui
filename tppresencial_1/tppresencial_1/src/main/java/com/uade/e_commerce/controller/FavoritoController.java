@@ -3,6 +3,7 @@ package com.uade.e_commerce.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,17 +25,20 @@ public class FavoritoController {
     }
 
     @GetMapping
+    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<List<ProductoDTO>> obtenerFavoritos(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(favoritoService.obtenerFavoritos(usuarioId));
     }
 
     @PostMapping("/{productoId}")
+    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<List<ProductoDTO>> agregarFavorito(@PathVariable Long usuarioId,
                                                              @PathVariable Long productoId) {
         return ResponseEntity.ok(favoritoService.agregarFavorito(usuarioId, productoId));
     }
 
     @DeleteMapping("/{productoId}")
+    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<List<ProductoDTO>> eliminarFavorito(@PathVariable Long usuarioId,
                                                                @PathVariable Long productoId) {
         return ResponseEntity.ok(favoritoService.eliminarFavorito(usuarioId, productoId));

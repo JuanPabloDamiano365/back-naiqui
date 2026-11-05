@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.e_commerce.dto.ItemPedidoDTO;
+import com.uade.e_commerce.dto.CrearPedidoDTO;
 import com.uade.e_commerce.dto.PedidoDTO;
 import com.uade.e_commerce.exception.BusinessException;
 import com.uade.e_commerce.exception.ResourceNotFoundException;
@@ -53,7 +54,15 @@ public class PedidoService {
         List<ItemPedidoDTO> items = pedido.getItems().stream()
                 .map(this::toItemDTO)
                 .toList();
-        return new PedidoDTO(pedido.getId(), pedido.getUsuario().getId(), pedido.getFecha(), pedido.getEstado(), pedido.getTotal(), items);
+        return new PedidoDTO(
+                pedido.getId(),
+                pedido.getUsuario().getId(),
+                pedido.getFecha(),
+                pedido.getEstado(),
+                pedido.getTotal(),
+                items,
+                pedido.getMetodoPago()
+        );
     }
     public List<PedidoDTO> listarPedidos() {
         return pedidoRepository.findAll().stream()
@@ -72,6 +81,10 @@ public class PedidoService {
     }
 
     public PedidoDTO crearPedidoDesdeCarrito(Long usuarioId) {
+        return crearPedidoDesdeCarrito(usuarioId, null);
+    }
+
+    public PedidoDTO crearPedidoDesdeCarrito(Long usuarioId, CrearPedidoDTO datosEntrega) {
         Carrito carrito = carritoRepository.findByUsuarioId(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("El usuario con id " + usuarioId + " no tiene un carrito asociado"));
 
@@ -90,6 +103,19 @@ public class PedidoService {
         pedido.setUsuario(carrito.getUsuario());
         pedido.setFecha(LocalDateTime.now());
         pedido.setEstado(ESTADO_PENDIENTE);
+        if (datosEntrega == null) {
+            pedido.setNombreEntrega(carrito.getUsuario().getNombre());
+            pedido.setTelefonoEntrega(carrito.getUsuario().getTelefono());
+            pedido.setDireccionEntrega(carrito.getUsuario().getDireccion());
+        } else {
+            pedido.setNombreEntrega(datosEntrega.getNombre());
+            pedido.setTelefonoEntrega(datosEntrega.getTelefono());
+            pedido.setDireccionEntrega(datosEntrega.getDireccion());
+            pedido.setCodigoPostalEntrega(datosEntrega.getCodigoPostal());
+            pedido.setCiudadEntrega(datosEntrega.getCiudad());
+            pedido.setProvinciaEntrega(datosEntrega.getProvincia());
+            pedido.setMetodoPago(datosEntrega.getMetodoPago());
+        }
 
         double total = 0.0;
         for (ItemCarrito itemCarrito : carrito.getItems()) {

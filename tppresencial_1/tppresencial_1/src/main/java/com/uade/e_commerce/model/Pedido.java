@@ -34,6 +34,13 @@ public class Pedido {
     private LocalDateTime fecha;
     private String estado;
     private Double total;
+    private String nombreEntrega;
+    private String telefonoEntrega;
+    private String direccionEntrega;
+    private String codigoPostalEntrega;
+    private String ciudadEntrega;
+    private String provinciaEntrega;
+    private String metodoPago;
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItemPedido> items = new ArrayList<>();

@@ -22,6 +22,22 @@ Servicios:
 El backend se compila solo con Maven dentro de Docker y MySQL se inicializa con
 los datos de `src/main/resources/data.sql`.
 
+## Carrito y checkout
+
+Los roles `USUARIO`, `VENDEDOR` y `ADMIN` pueden consultar y modificar carritos y
+favoritos. Vendedor y usuario quedan limitados a sus propios datos; el admin
+puede acceder a los de cualquier usuario. Si una cuenta todavía no tiene
+carrito asociado, se crea automáticamente al consultarlo.
+
+El carrito se consulta y modifica por usuario. Para actualizar la cantidad de
+un renglón se usa `PUT /api/usuarios/{usuarioId}/carrito/items/{itemId}` con
+`{"cantidad": 2}`.
+
+Para confirmar una compra se usa
+`POST /api/usuarios/{usuarioId}/pedidos`, enviando nombre, teléfono, dirección,
+código postal, ciudad, provincia y `metodoPago` (`TARJETA` o `TRANSFERENCIA`).
+El pedido conserva los datos de entrega y vacía el carrito al crearse.
+
 Para bajar todo:
 
 ```bash
@@ -33,3 +49,10 @@ Para borrar también los datos de MySQL:
 ```bash
 docker compose down -v
 ```
+
+En cada inicio, `data.sql` carga de forma idempotente el catálogo de ejemplo:
+categorías Running, Urbanas, Basketball, Fútbol y Training, con modelos
+variados por género y precio. Los modelos infantiles se identifican por género
+“Niños” y conservan su categoría deportiva (Running, Urbanas, Fútbol o Training).
+Las ofertas guardan el precio vigente en `precio` y el precio anterior en
+`precio_original`; al reiniciar no se duplican ni se borran los datos existentes.
