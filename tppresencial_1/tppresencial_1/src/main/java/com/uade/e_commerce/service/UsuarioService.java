@@ -54,12 +54,15 @@ public class UsuarioService {
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new BusinessException("Ya existe un usuario registrado con el email " + dto.getEmail());
         }
+        if (dto.getPassword().length() < 8) {
+            throw new BusinessException("La contraseña debe tener al menos 8 caracteres");
+        }
 
         Usuario usuario = new Usuario();
         usuario.setNombre(dto.getNombre());
         usuario.setEmail(dto.getEmail());
         usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
-        usuario.setRol(dto.getRol() != null ? dto.getRol() : RolUsuario.USUARIO);
+        usuario.setRol(RolUsuario.USUARIO);
         usuario.setDireccion(dto.getDireccion());
         usuario.setTelefono(dto.getTelefono());
 

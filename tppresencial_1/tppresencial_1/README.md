@@ -79,9 +79,11 @@ src/main/java/com/uade/e_commerce/
 |---|---|---|
 | GET | `/api/usuarios` | Lista todos los usuarios |
 | GET | `/api/usuarios/{id}` | Obtiene un usuario |
-| POST | `/api/usuarios` | Registra un usuario (crea también su carrito vacío) |
+| POST | `/api/usuarios` | Registra un usuario con rol `USUARIO`, contraseña de al menos 8 caracteres y carrito vacío |
 | PUT | `/api/usuarios/{id}` | Actualiza datos de contacto |
 | DELETE | `/api/usuarios/{id}` | Elimina un usuario |
+
+El frontend crea la cuenta con `POST /api/usuarios` y luego inicia sesión con `POST /api/login`. El login devuelve el JWT que se usa en las rutas protegidas. Los emails ya registrados no se pueden volver a usar.
 
 ### Carrito
 | Método | URL | Descripción |
