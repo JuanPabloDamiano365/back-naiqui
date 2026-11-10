@@ -14,6 +14,7 @@ import com.uade.e_commerce.model.RolUsuario;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -33,28 +34,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
 
-        String authorizationHeader = request.getHeader("Authorization");
+        String token = obtenerToken(request);
 
-        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-            String token = authorizationHeader.substring(7);
-
-            if (jwtService.esValido(token)) {
-                String email = jwtService.obtenerEmail(token);
-                usuarioRepository.findByEmail(email).ifPresent(usuario -> {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            email,
-                            null,
-                            Collections.singletonList(
-                                    new SimpleGrantedAuthority("ROLE_"
-                                            + (usuario.getRol() == null
-                                                    ? RolUsuario.USUARIO.name()
-                                                    : usuario.getRol().name())))
-                    );
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                });
-            }
+        if (jwtService.esValido(token)) {
+            String email = jwtService.obtenerEmail(token);
+            usuarioRepository.findByEmail(email).ifPresent(usuario -> {
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                        email,
+                        null,
+                        Collections.singletonList(
+                                new SimpleGrantedAuthority("ROLE_"
+                                        + (usuario.getRol() == null
+                                                ? RolUsuario.USUARIO.name()
+                                                : usuario.getRol().name())))
+                );
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            });
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String obtenerToken(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("naiqui_auth".equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+
+        String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return null;
     }
 }

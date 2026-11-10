@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.e_commerce.dto.LoginRequestDTO;
 import com.uade.e_commerce.dto.LoginResponseDTO;
+import com.uade.e_commerce.dto.UsuarioSesionDTO;
 import com.uade.e_commerce.exception.UnauthorizedException;
 import com.uade.e_commerce.model.Usuario;
 import com.uade.e_commerce.repository.UsuarioRepository;
@@ -55,6 +56,18 @@ public class AuthService {
                 usuario.getRol(),
                 token,
                 "Login exitoso"
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public UsuarioSesionDTO obtenerSesion(String email) {
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("La sesión ya no es válida"));
+        return new UsuarioSesionDTO(
+                usuario.getId(),
+                usuario.getNombre(),
+                usuario.getEmail(),
+                usuario.getRol()
         );
     }
 }

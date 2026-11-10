@@ -83,7 +83,9 @@ src/main/java/com/uade/e_commerce/
 | PUT | `/api/usuarios/{id}` | Actualiza datos de contacto |
 | DELETE | `/api/usuarios/{id}` | Elimina un usuario |
 
-El frontend crea la cuenta con `POST /api/usuarios` y luego inicia sesión con `POST /api/login`. El login devuelve el JWT que se usa en las rutas protegidas. Los emails ya registrados no se pueden volver a usar.
+El frontend crea la cuenta con `POST /api/usuarios` y luego inicia sesión con `POST /api/login`. Antes de enviar operaciones que modifican datos, solicita un token CSRF a `GET /api/csrf`. El login establece el JWT en una cookie `HttpOnly`; el cliente consulta `GET /api/me` para recuperar la sesión y usa `POST /api/logout` para cerrarla. El JWT no se devuelve en el cuerpo de la respuesta ni se guarda en `localStorage`.
+
+La API acepta cookies del origen frontend configurado en `NAIQUI_CORS_ALLOWED_ORIGINS` (lista de orígenes separados por comas; por defecto `http://localhost:5173`). Para producción con HTTPS, configurar `NAIQUI_AUTH_COOKIE_SECURE=true`. Si el frontend y el backend están en sitios distintos, configurar además `NAIQUI_AUTH_COOKIE_SAME_SITE=None`; en desarrollo local se mantiene `Lax`.
 
 ### Carrito
 | Método | URL | Descripción |
