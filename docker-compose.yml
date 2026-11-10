@@ -43,8 +43,11 @@ services:
       NAIQUI_CORS_ALLOWED_ORIGINS: ${NAIQUI_CORS_ALLOWED_ORIGINS:-http://localhost:5173}
       NAIQUI_AUTH_COOKIE_SECURE: ${NAIQUI_AUTH_COOKIE_SECURE:-false}
       NAIQUI_AUTH_COOKIE_SAME_SITE: ${NAIQUI_AUTH_COOKIE_SAME_SITE:-Lax}
+      NAIQUI_UPLOAD_DIRECTORY: /app/uploads
     ports:
       - "8080:8080"
+    volumes:
+      - ./naiqui_backend/uploads:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy

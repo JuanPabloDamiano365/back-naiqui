@@ -13,4 +13,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     List<Producto> findByCategoriaId(Long categoriaId);
 
     List<Producto> findByGeneroIgnoreCase(String genero);
+
+    List<Producto> findByCreadorIsNull();
 }

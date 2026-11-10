@@ -40,6 +40,9 @@ public class Usuario {
     private Long id;
 
     private String nombre;
+    private String apellido;
+    @Column(unique = true, length = 40)
+    private String username;
     @Column(unique = true)
     private String email;
 

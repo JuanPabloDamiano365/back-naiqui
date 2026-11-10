@@ -39,6 +39,11 @@ public class ProductoDTO {
     private Integer stock;
 
     private String imagenUrl;
+    private List<String> imagenes;
+    private Long creadorId;
+    private String creadorNombre;
+    private String creadorEmail;
+    private String creadorRol;
 
     @NotNull(message = "Debe indicarse la categoría del producto")
     private Long categoriaId;

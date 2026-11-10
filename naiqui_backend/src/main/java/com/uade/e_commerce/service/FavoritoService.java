@@ -11,6 +11,8 @@ import com.uade.e_commerce.dto.ProductoDTO;
 import com.uade.e_commerce.dto.ProductoVarianteDTO;
 import com.uade.e_commerce.exception.ResourceNotFoundException;
 import com.uade.e_commerce.model.Producto;
+import com.uade.e_commerce.model.ProductoImagen;
+import com.uade.e_commerce.model.RolUsuario;
 import com.uade.e_commerce.model.Usuario;
 import com.uade.e_commerce.repository.ProductoRepository;
 import com.uade.e_commerce.repository.ProductoVarianteRepository;
@@ -40,21 +42,33 @@ public class FavoritoService {
         int stock = variantes.isEmpty()
                 ? producto.getStock()
                 : variantes.stream().mapToInt(ProductoVarianteDTO::getStock).sum();
-        return new ProductoDTO(
-                producto.getId(),
-                producto.getNombre(),
-                producto.getGenero(),
-                producto.getMarca(),
-                producto.getDescripcion(),
-                producto.getPrecio(),
-                producto.getPrecioOriginal(),
-                producto.getColor(),
-                stock,
-                producto.getImagenUrl(),
-                producto.getCategoria() != null ? producto.getCategoria().getId() : null,
-                producto.getCategoria() != null ? producto.getCategoria().getNombre() : null,
-                variantes
-        );
+        ProductoDTO dto = new ProductoDTO();
+        dto.setId(producto.getId());
+        dto.setNombre(producto.getNombre());
+        dto.setGenero(producto.getGenero());
+        dto.setMarca(producto.getMarca());
+        dto.setDescripcion(producto.getDescripcion());
+        dto.setPrecio(producto.getPrecio());
+        dto.setPrecioOriginal(producto.getPrecioOriginal());
+        dto.setColor(producto.getColor());
+        dto.setStock(stock);
+        List<String> imageUrls = producto.getImagenes().stream().map(ProductoImagen::getUrl).toList();
+        if (imageUrls.isEmpty() && producto.getImagenUrl() != null) imageUrls = List.of(producto.getImagenUrl());
+        dto.setImagenes(imageUrls);
+        dto.setImagenUrl(imageUrls.isEmpty() ? null : imageUrls.get(0));
+        if (producto.getCreador() != null) {
+            dto.setCreadorId(producto.getCreador().getId());
+            dto.setCreadorNombre((producto.getCreador().getNombre() + " "
+                    + (producto.getCreador().getApellido() == null ? "" : producto.getCreador().getApellido())).trim());
+            dto.setCreadorEmail(producto.getCreador().getEmail());
+            dto.setCreadorRol(producto.getCreador().getRol() == null
+                    ? RolUsuario.USUARIO.name()
+                    : producto.getCreador().getRol().name());
+        }
+        dto.setCategoriaId(producto.getCategoria() != null ? producto.getCategoria().getId() : null);
+        dto.setCategoriaNombre(producto.getCategoria() != null ? producto.getCategoria().getNombre() : null);
+        dto.setVariantes(variantes);
+        return dto;
     }
 
     public List<ProductoDTO> obtenerFavoritos(Long usuarioId) {

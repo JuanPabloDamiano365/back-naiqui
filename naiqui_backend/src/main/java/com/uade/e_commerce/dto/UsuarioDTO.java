@@ -16,6 +16,9 @@ public class UsuarioDTO {
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
+    private String apellido;
+    private String username;
+
     @NotBlank(message = "El email es obligatorio")
     @Email(message = "El email no tiene un formato válido")
     private String email;
@@ -40,5 +43,12 @@ public class UsuarioDTO {
         this.rol = rol != null ? rol : RolUsuario.USUARIO;
         this.direccion = direccion;
         this.telefono = telefono;
+    }
+
+    public UsuarioDTO(Long id, String nombre, String apellido, String username, String email, String password,
+                      RolUsuario rol, String direccion, String telefono) {
+        this(id, nombre, email, password, rol, direccion, telefono);
+        this.apellido = apellido;
+        this.username = username;
     }
 }

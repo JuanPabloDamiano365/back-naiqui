@@ -1,5 +1,7 @@
 # Maven build output
 **/target/
+/naiqui_backend/uploads/products/*
+!/naiqui_backend/uploads/products/.gitkeep
 
 # Local H2 database files
 **/data/*.mv.db

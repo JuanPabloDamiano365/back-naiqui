@@ -13,11 +13,14 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.uade.e_commerce.exception.BusinessException;
 import com.uade.e_commerce.dto.CrearPedidoDTO;
 import com.uade.e_commerce.model.Carrito;
 import com.uade.e_commerce.model.ItemCarrito;
+import com.uade.e_commerce.model.ItemPedido;
 import com.uade.e_commerce.model.Pedido;
 import com.uade.e_commerce.model.Producto;
 import com.uade.e_commerce.model.ProductoVariante;
@@ -27,6 +30,56 @@ import com.uade.e_commerce.repository.PedidoRepository;
 import com.uade.e_commerce.repository.ProductoVarianteRepository;
 
 class PedidoServiceTest {
+
+    @Test
+    void vendedorSoloRecibeSusItemsYElSubtotalCorrespondiente() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        CarritoRepository carritoRepository = mock(CarritoRepository.class);
+        ProductoVarianteRepository varianteRepository = mock(ProductoVarianteRepository.class);
+        Usuario vendedor = new Usuario();
+        vendedor.setEmail("seller@example.com");
+        Usuario otroVendedor = new Usuario();
+        otroVendedor.setEmail("other@example.com");
+        Producto propio = producto(10);
+        propio.setCreador(vendedor);
+        Producto ajeno = producto(10);
+        ajeno.setId(5L);
+        ajeno.setNombre("Otro producto");
+        ajeno.setPrecio(50.0);
+        ajeno.setCreador(otroVendedor);
+        Pedido pedido = pedidoExistente();
+        pedido.setTotal(150.0);
+        pedido.setItems(List.of(itemPedido(pedido, propio, 1), itemPedido(pedido, ajeno, 1)));
+        when(pedidoRepository.findAll()).thenReturn(List.of(pedido));
+        PedidoService service = new PedidoService(pedidoRepository, carritoRepository, varianteRepository);
+        var authentication = new UsernamePasswordAuthenticationToken(
+                "seller@example.com", null, List.of(new SimpleGrantedAuthority("ROLE_VENDEDOR")));
+
+        var result = service.listarPedidos(authentication);
+
+        assertEquals(1, result.size());
+        assertEquals(1, result.get(0).getItems().size());
+        assertEquals(4L, result.get(0).getItems().get(0).getProductoId());
+        assertEquals(100.0, result.get(0).getTotal());
+    }
+
+    @Test
+    void vendedorNoPuedeCancelarPedidoCompleto() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        CarritoRepository carritoRepository = mock(CarritoRepository.class);
+        ProductoVarianteRepository varianteRepository = mock(ProductoVarianteRepository.class);
+        Pedido pedido = pedidoExistente();
+        when(pedidoRepository.findById(12L)).thenReturn(Optional.of(pedido));
+        PedidoService service = new PedidoService(pedidoRepository, carritoRepository, varianteRepository);
+        var authentication = new UsernamePasswordAuthenticationToken(
+                "seller@example.com", null, List.of(new SimpleGrantedAuthority("ROLE_VENDEDOR")));
+
+        BusinessException error = assertThrows(
+                BusinessException.class, () -> service.actualizarEstado(12L, "CANCELADO", authentication));
+
+        assertEquals("Solo un administrador puede cancelar el pedido completo", error.getMessage());
+        verify(pedidoRepository, never()).save(any(Pedido.class));
+    }
 
     @Test
     void crearPedidoDescuentaElStockDeLaVarianteComprada() {
@@ -183,6 +236,17 @@ class PedidoServiceTest {
         variante.setTalle(40);
         variante.setStock(stock);
         return variante;
+    }
+
+    private ItemPedido itemPedido(Pedido pedido, Producto producto, int cantidad) {
+        ItemPedido item = new ItemPedido();
+        item.setPedido(pedido);
+        item.setProducto(producto);
+        item.setCantidad(cantidad);
+        item.setPrecioUnitario(producto.getPrecio());
+        item.setTalle(40);
+        item.setColor(producto.getColor());
+        return item;
     }
 
     private Carrito carrito(Producto producto, int cantidad) {

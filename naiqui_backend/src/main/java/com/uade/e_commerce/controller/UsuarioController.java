@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.uade.e_commerce.dto.UsuarioDTO;
 import com.uade.e_commerce.dto.CambiarRolUsuarioDTO;
+import com.uade.e_commerce.dto.UsuarioRegistroDTO;
 import com.uade.e_commerce.service.UsuarioService;
 
 import jakarta.validation.Valid;
@@ -43,7 +44,7 @@ public class UsuarioController {
     }
 
     @PostMapping
-    public ResponseEntity<UsuarioDTO> registrarUsuario(@Valid @RequestBody UsuarioDTO dto) {
+    public ResponseEntity<UsuarioDTO> registrarUsuario(@Valid @RequestBody UsuarioRegistroDTO dto) {
         UsuarioDTO creado = usuarioService.registrarUsuario(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }

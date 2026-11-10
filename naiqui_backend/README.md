@@ -5,11 +5,20 @@ Backend REST para un e-commerce de zapatillas, desarrollado con Spring Boot, Spr
 ## Requisitos para correrlo
 
 - JDK 17 o superior
-- Maven 3.9+ (o usar el wrapper `./mvnw` incluido, si se agrega)
-
-No hace falta instalar ninguna base de datos: el proyecto viene configurado con **H2** (una base de datos relacional embebida) que se guarda en un archivo local (`./data/tppresencial_1`), así que los datos persisten entre reinicios.
+- Maven 3.9+
+- MySQL 8.0 o superior
 
 ## Cómo ejecutarlo
+
+La aplicación y las pruebas usan MySQL. Para iniciar todo el entorno con Docker desde la raíz del repositorio:
+
+```bash
+docker compose up --build
+```
+
+El backend queda en `http://localhost:8080` y el frontend en `http://localhost:5173`.
+
+Para ejecutar el backend directamente, crear la base `ecommerce_db` en MySQL y configurar `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` y `SPRING_DATASOURCE_PASSWORD` si los valores por defecto no corresponden al entorno. Después:
 
 ```bash
 cd naiqui_backend
@@ -22,15 +31,9 @@ Los usuarios podrán buscar y filtrar productos según diferentes característic
 También podrán agregar productos a un carrito, modificar las cantidades y gestionar una lista de deseos (wishlist).
 
 
-La aplicación arranca en `http://localhost:8080`.
-
 Al arrancar por primera vez, `src/main/resources/data.sql` precarga automáticamente el catálogo y las cuentas de prueba `demo@naiqui.com`, `vendedor@naiqui.com` y `admin@naiqui.com`.
 
-Se puede inspeccionar la base de datos desde el navegador en `http://localhost:8080/h2-console` (JDBC URL: `jdbc:h2:file:./data/tppresencial_1`, usuario `sa`, sin contraseña).
-
-### Usar MySQL en lugar de H2 (opcional)
-
-En `src/main/resources/application.properties` están comentadas las líneas necesarias para apuntar a una base MySQL local. Basta con comentar el bloque de H2 y descomentar el bloque de MySQL (el driver ya está en el `pom.xml`).
+Las pruebas también requieren MySQL. Para aislar los datos de prueba, apuntar `SPRING_DATASOURCE_URL` a una base dedicada, por ejemplo `ecommerce_test`, antes de ejecutar `mvn test`; no usar la base con datos reales o de desarrollo.
 
 ## Arquitectura del proyecto
 
@@ -74,12 +77,16 @@ src/main/java/com/uade/e_commerce/
 | PUT | `/api/productos/{id}` | Actualiza un producto |
 | DELETE | `/api/productos/{id}` | Elimina un producto |
 
+Los productos incluyen `creadorId` y `creadorNombre`. Un vendedor solo puede editar o eliminar sus productos; un administrador puede gestionar cualquiera. Los productos existentes sin autor se asignan al primer administrador registrado.
+
+Para cargar una imagen, enviar `POST /api/productos/imagenes` como `multipart/form-data` con el campo `imagen` (PNG/JPEG, hasta 5 MB). La respuesta incluye su URL pública para agregarla al producto. Las imágenes se guardan en `naiqui_backend/uploads`; Docker las conserva mediante un volumen. También se aceptan URLs externas en el campo `imagenes` del producto.
+
 ### Usuarios
 | Método | URL | Descripción |
 |---|---|---|
 | GET | `/api/usuarios` | Lista todos los usuarios |
 | GET | `/api/usuarios/{id}` | Obtiene un usuario |
-| POST | `/api/usuarios` | Registra un usuario con rol `USUARIO`, contraseña de al menos 8 caracteres y carrito vacío |
+| POST | `/api/usuarios` | Registra username, nombre, apellido, email, contraseña (mínimo 8 caracteres) y rol `USUARIO` (comprador, predeterminado) o `VENDEDOR`; no permite crear administradores |
 | PUT | `/api/usuarios/{id}` | Actualiza datos de contacto |
 | DELETE | `/api/usuarios/{id}` | Elimina un usuario |
 

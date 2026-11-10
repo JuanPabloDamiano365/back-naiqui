@@ -8,6 +8,8 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.uade.e_commerce.dto.ItemPedidoDTO;
 import com.uade.e_commerce.dto.CrearPedidoDTO;
@@ -58,9 +60,17 @@ public class PedidoService {
         );
     }
     private PedidoDTO toDTO(Pedido pedido) {
+        return toDTO(pedido, null);
+    }
+
+    private PedidoDTO toDTO(Pedido pedido, Authentication authentication) {
+        boolean vendedor = authentication != null
+                && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_VENDEDOR"));
         List<ItemPedidoDTO> items = pedido.getItems().stream()
+                .filter(item -> !vendedor || perteneceAlVendedor(item, authentication))
                 .map(this::toItemDTO)
                 .toList();
+        double total = items.stream().mapToDouble(ItemPedidoDTO::getSubtotal).sum();
         return new PedidoDTO(
                 pedido.getId(),
                 pedido.getUsuario().getId(),
@@ -68,7 +78,7 @@ public class PedidoService {
                 pedido.getUsuario().getEmail(),
                 pedido.getFecha(),
                 pedido.getEstado(),
-                pedido.getTotal(),
+                vendedor ? total : pedido.getTotal(),
                 items,
                 pedido.getMetodoPago(),
                 pedido.getNombreEntrega(),
@@ -80,19 +90,45 @@ public class PedidoService {
         );
     }
     public List<PedidoDTO> listarPedidos() {
+        return listarPedidos(null);
+    }
+
+    public List<PedidoDTO> listarPedidos(Authentication authentication) {
         return pedidoRepository.findAll().stream()
-                .map(this::toDTO)
+                .map(pedido -> toDTO(pedido, authentication))
+                .filter(pedido -> !pedido.getItems().isEmpty())
                 .toList();
     }
+
     public PedidoDTO buscarPedidoPorId(Long id) {
+        return buscarPedidoPorId(id, null);
+    }
+
+    public PedidoDTO buscarPedidoPorId(Long id, Authentication authentication) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pedido con id " + id));
-        return toDTO(pedido);
+        return toDTO(pedido, authentication);
     }
+
     public List<PedidoDTO> listarPedidosPorUsuario(Long usuarioId) {
+        return listarPedidosPorUsuario(usuarioId, null);
+    }
+
+    public List<PedidoDTO> listarPedidosPorUsuario(Long usuarioId, Authentication authentication) {
         return pedidoRepository.findByUsuarioId(usuarioId).stream()
-                .map(this::toDTO)
+                .map(pedido -> toDTO(pedido, authentication))
+                .filter(pedido -> !pedido.getItems().isEmpty())
                 .toList();
+    }
+
+    private boolean perteneceAlVendedor(ItemPedido item, Authentication authentication) {
+        return item.getProducto().getCreador() != null
+                && authentication.getName().equalsIgnoreCase(item.getProducto().getCreador().getEmail());
+    }
+
+    private boolean esVendedor(Authentication authentication) {
+        return authentication != null
+                && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_VENDEDOR"));
     }
 
     public PedidoDTO crearPedidoDesdeCarrito(Long usuarioId) {
@@ -179,6 +215,10 @@ public class PedidoService {
         return toDTO(guardado);
     }
     public PedidoDTO actualizarEstado(Long id, String nuevoEstado) {
+        return actualizarEstado(id, nuevoEstado, null);
+    }
+
+    public PedidoDTO actualizarEstado(Long id, String nuevoEstado, Authentication authentication) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pedido con id " + id));
         if (nuevoEstado == null || nuevoEstado.isBlank()) {
@@ -190,17 +230,24 @@ public class PedidoService {
                     + String.join(", ", ESTADOS_PERMITIDOS));
         }
         if (ESTADO_CANCELADO.equals(estadoNormalizado)) {
+            if (esVendedor(authentication)) {
+                throw new BusinessException("Solo un administrador puede cancelar el pedido completo");
+            }
             if (!ESTADO_PENDIENTE.equalsIgnoreCase(pedido.getEstado())) {
                 throw new BusinessException("Solo se pueden cancelar pedidos en estado PENDIENTE");
             }
-            return cancelarPedido(id);
+            return cancelarPedido(id, authentication);
         }
         pedido.setEstado(estadoNormalizado);
         Pedido actualizado = pedidoRepository.save(pedido);
-        return toDTO(actualizado);
+        return toDTO(actualizado, authentication);
     }
 
     public PedidoDTO cancelarPedido(Long id) {
+        return cancelarPedido(id, null);
+    }
+
+    public PedidoDTO cancelarPedido(Long id, Authentication authentication) {
         Pedido pedido = pedidoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el pedido con id " + id));
 
@@ -220,7 +267,7 @@ public class PedidoService {
 
         pedido.setEstado(ESTADO_CANCELADO);
         Pedido actualizado = pedidoRepository.save(pedido);
-        return toDTO(actualizado);
+        return toDTO(actualizado, authentication);
     }
 
     private String colorDe(ItemCarrito item) {

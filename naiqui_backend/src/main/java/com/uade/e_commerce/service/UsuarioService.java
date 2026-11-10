@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.uade.e_commerce.dto.UsuarioDTO;
+import com.uade.e_commerce.dto.UsuarioRegistroDTO;
 import com.uade.e_commerce.exception.BusinessException;
 import com.uade.e_commerce.exception.ResourceNotFoundException;
 import com.uade.e_commerce.model.Carrito;
@@ -32,6 +33,8 @@ public class UsuarioService {
         UsuarioDTO dto = new UsuarioDTO();
         dto.setId(usuario.getId());
         dto.setNombre(usuario.getNombre());
+        dto.setApellido(usuario.getApellido());
+        dto.setUsername(usuario.getUsername());
         dto.setEmail(usuario.getEmail());
         dto.setPassword(null);
         dto.setRol(usuario.getRol() != null ? usuario.getRol() : RolUsuario.USUARIO);
@@ -61,8 +64,27 @@ public class UsuarioService {
     }
 
     public UsuarioDTO registrarUsuario(UsuarioDTO dto) {
+        UsuarioRegistroDTO registration = new UsuarioRegistroDTO();
+        registration.setUsername(dto.getUsername() == null || dto.getUsername().isBlank()
+                ? dto.getEmail().substring(0, dto.getEmail().indexOf('@'))
+                : dto.getUsername());
+        registration.setNombre(dto.getNombre());
+        registration.setApellido(dto.getApellido() == null ? "" : dto.getApellido());
+        registration.setEmail(dto.getEmail());
+        registration.setPassword(dto.getPassword());
+        return registrarUsuario(registration);
+    }
+
+    public UsuarioDTO registrarUsuario(UsuarioRegistroDTO dto) {
+        RolUsuario rol = dto.getRol() == null ? RolUsuario.USUARIO : dto.getRol();
+        if (rol != RolUsuario.USUARIO && rol != RolUsuario.VENDEDOR) {
+            throw new BusinessException("Al registrarte solo podés elegir el rol comprador o vendedor");
+        }
         if (usuarioRepository.existsByEmail(dto.getEmail())) {
             throw new BusinessException("Ya existe un usuario registrado con el email " + dto.getEmail());
+        }
+        if (usuarioRepository.existsByUsername(dto.getUsername())) {
+            throw new BusinessException("Ya existe un usuario con ese nombre de usuario");
         }
         if (dto.getPassword().length() < 8) {
             throw new BusinessException("La contraseña debe tener al menos 8 caracteres");
@@ -70,9 +92,11 @@ public class UsuarioService {
 
         Usuario usuario = new Usuario();
         usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
+        usuario.setUsername(dto.getUsername());
         usuario.setEmail(dto.getEmail());
         usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
-        usuario.setRol(RolUsuario.USUARIO);
+        usuario.setRol(rol);
         usuario.setDireccion(dto.getDireccion());
         usuario.setTelefono(dto.getTelefono());
 
@@ -89,6 +113,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario con id " + id));
 
         usuario.setNombre(dto.getNombre());
+        usuario.setApellido(dto.getApellido());
         usuario.setDireccion(dto.getDireccion());
         usuario.setTelefono(dto.getTelefono());
 

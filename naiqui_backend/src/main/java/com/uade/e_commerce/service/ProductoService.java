@@ -16,9 +16,13 @@ import com.uade.e_commerce.exception.ResourceNotFoundException;
 import com.uade.e_commerce.model.Categoria;
 import com.uade.e_commerce.model.Producto;
 import com.uade.e_commerce.model.ProductoVariante;
+import com.uade.e_commerce.model.ProductoImagen;
+import com.uade.e_commerce.model.RolUsuario;
+import com.uade.e_commerce.model.Usuario;
 import com.uade.e_commerce.repository.CategoriaRepository;
 import com.uade.e_commerce.repository.ProductoRepository;
 import com.uade.e_commerce.repository.ProductoVarianteRepository;
+import com.uade.e_commerce.repository.UsuarioRepository;
 
 @Service
 @Transactional
@@ -27,12 +31,14 @@ public class ProductoService {
     private final ProductoRepository productoRepository;
     private final CategoriaRepository categoriaRepository;
     private final ProductoVarianteRepository varianteRepository;
+    private final UsuarioRepository usuarioRepository;
 
     public ProductoService(ProductoRepository productoRepository, CategoriaRepository categoriaRepository,
-                           ProductoVarianteRepository varianteRepository) {
+                           ProductoVarianteRepository varianteRepository, UsuarioRepository usuarioRepository) {
         this.productoRepository = productoRepository;
         this.categoriaRepository = categoriaRepository;
         this.varianteRepository = varianteRepository;
+        this.usuarioRepository = usuarioRepository;
     }
     private ProductoDTO toDTO(Producto producto) {
         ProductoDTO dto = new ProductoDTO();
@@ -51,7 +57,23 @@ public class ProductoService {
         dto.setVariantes(variantes.stream()
                 .map(variante -> new ProductoVarianteDTO(variante.getColor(), variante.getTalle(), variante.getStock()))
                 .toList());
-        dto.setImagenUrl(producto.getImagenUrl());
+        List<String> imageUrls = producto.getImagenes().stream()
+                .map(ProductoImagen::getUrl)
+                .toList();
+        if (imageUrls.isEmpty() && producto.getImagenUrl() != null && !producto.getImagenUrl().isBlank()) {
+            imageUrls = List.of(producto.getImagenUrl());
+        }
+        dto.setImagenes(imageUrls);
+        dto.setImagenUrl(imageUrls.isEmpty() ? null : imageUrls.get(0));
+        if (producto.getCreador() != null) {
+            dto.setCreadorId(producto.getCreador().getId());
+            dto.setCreadorNombre((producto.getCreador().getNombre() + " "
+                    + (producto.getCreador().getApellido() == null ? "" : producto.getCreador().getApellido())).trim());
+            dto.setCreadorEmail(producto.getCreador().getEmail());
+            dto.setCreadorRol(producto.getCreador().getRol() == null
+                    ? RolUsuario.USUARIO.name()
+                    : producto.getCreador().getRol().name());
+        }
         if (producto.getCategoria() != null) {
             dto.setCategoriaId(producto.getCategoria().getId());
             dto.setCategoriaNombre(producto.getCategoria().getNombre());
@@ -60,16 +82,19 @@ public class ProductoService {
     }
 
     public List<ProductoDTO> listarProductos() {
+        asignarCreadorLegacy();
         return productoRepository.findAll().stream()
                 .map(this::toDTO)
                 .toList();
     }
     public ProductoDTO buscarProductoPorId(Long id) {
+        asignarCreadorLegacy();
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id " + id));
         return toDTO(producto);
     }
     public List<ProductoDTO> listarProductosPorCategoria(Long categoriaId) {
+        asignarCreadorLegacy();
         if (!categoriaRepository.existsById(categoriaId)) {
             throw new ResourceNotFoundException("No se encontró la categoría con id " + categoriaId);
         }
@@ -78,11 +103,12 @@ public class ProductoService {
                 .toList();
     }
     public List<ProductoDTO> listarProductosPorGenero(String genero) {
+        asignarCreadorLegacy();
         return productoRepository.findByGeneroIgnoreCase(genero).stream()
                 .map(this::toDTO)
                 .toList();
     }
-    public ProductoDTO crearProducto(ProductoDTO dto) {
+    public ProductoDTO crearProducto(ProductoDTO dto, String emailCreador) {
         Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la categoría con id " + dto.getCategoriaId()));
 
@@ -97,12 +123,16 @@ public class ProductoService {
         producto.setStock(dto.getStock());
         producto.setImagenUrl(dto.getImagenUrl());
         producto.setCategoria(categoria);
+        producto.setCreador(usuarioRepository.findByEmail(emailCreador)
+                .orElseThrow(() -> new ResourceNotFoundException("No se encontró el usuario creador del producto")));
 
         Producto guardado = productoRepository.save(producto);
+        sincronizarImagenes(guardado, dto);
         guardarVariantes(guardado, dto);
         return toDTO(guardado);
     }
     public ProductoDTO actualizarProducto(Long id, ProductoDTO dto) {
+        asignarCreadorLegacy();
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró el producto con id " + id));
 
@@ -121,6 +151,7 @@ public class ProductoService {
         producto.setCategoria(categoria);
 
         Producto actualizado = productoRepository.save(producto);
+        sincronizarImagenes(actualizado, dto);
         if (dto.getVariantes() != null) {
             sincronizarVariantes(actualizado, dto.getVariantes());
         } else {
@@ -180,6 +211,35 @@ public class ProductoService {
             throw new ResourceNotFoundException("No se encontró el producto con id " + id);
         }
         productoRepository.deleteById(id);
+    }
+
+    private void asignarCreadorLegacy() {
+        List<Producto> sinCreador = productoRepository.findByCreadorIsNull();
+        if (sinCreador.isEmpty()) return;
+        usuarioRepository.findFirstByRolOrderByIdAsc(RolUsuario.ADMIN).ifPresent(admin -> {
+            sinCreador.forEach(producto -> producto.setCreador(admin));
+            productoRepository.saveAll(sinCreador);
+        });
+    }
+
+    private void sincronizarImagenes(Producto producto, ProductoDTO dto) {
+        List<String> urls = dto.getImagenes();
+        if (urls == null) {
+            urls = dto.getImagenUrl() == null || dto.getImagenUrl().isBlank()
+                    ? List.of()
+                    : List.of(dto.getImagenUrl().trim());
+        }
+        List<String> cleanedUrls = urls.stream()
+                .filter(url -> url != null && !url.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        producto.getImagenes().clear();
+        for (String url : cleanedUrls) {
+            producto.getImagenes().add(new ProductoImagen(null, producto, url));
+        }
+        producto.setImagenUrl(cleanedUrls.isEmpty() ? null : cleanedUrls.get(0));
+        productoRepository.save(producto);
     }
 
     private void guardarVariantes(Producto producto, ProductoDTO dto) {

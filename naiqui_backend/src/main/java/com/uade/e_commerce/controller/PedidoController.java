@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,20 +33,21 @@ public class PedidoController {
 
     @GetMapping("/pedidos")
     @PreAuthorize("hasAnyRole('ADMIN', 'VENDEDOR')")
-    public ResponseEntity<List<PedidoDTO>> listarPedidos() {
-        return ResponseEntity.ok(pedidoService.listarPedidos());
+    public ResponseEntity<List<PedidoDTO>> listarPedidos(Authentication authentication) {
+        return ResponseEntity.ok(pedidoService.listarPedidos(authentication));
     }
 
     @GetMapping("/pedidos/{id}")
     @PreAuthorize("@pedidoAuthorizationService.puedeVerPedido(#p0, authentication)")
-    public ResponseEntity<PedidoDTO> buscarPedidoPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(pedidoService.buscarPedidoPorId(id));
+    public ResponseEntity<PedidoDTO> buscarPedidoPorId(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(pedidoService.buscarPedidoPorId(id, authentication));
     }
 
     @GetMapping("/usuarios/{usuarioId}/pedidos")
     @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
-    public ResponseEntity<List<PedidoDTO>> listarPedidosPorUsuario(@PathVariable Long usuarioId) {
-        return ResponseEntity.ok(pedidoService.listarPedidosPorUsuario(usuarioId));
+    public ResponseEntity<List<PedidoDTO>> listarPedidosPorUsuario(
+            @PathVariable Long usuarioId, Authentication authentication) {
+        return ResponseEntity.ok(pedidoService.listarPedidosPorUsuario(usuarioId, authentication));
     }
 
     @PostMapping("/usuarios/{usuarioId}/pedidos")
@@ -58,11 +59,14 @@ public class PedidoController {
     }
 
     @PutMapping("/pedidos/{id}/estado")
-    public ResponseEntity<PedidoDTO> actualizarEstado(@PathVariable Long id, @Valid @RequestBody ActualizarEstadoDTO dto) {
-        return ResponseEntity.ok(pedidoService.actualizarEstado(id, dto.getEstado()));
+    @PreAuthorize("@pedidoAuthorizationService.puedeVerPedido(#id, authentication)")
+    public ResponseEntity<PedidoDTO> actualizarEstado(
+            @PathVariable Long id, @Valid @RequestBody ActualizarEstadoDTO dto, Authentication authentication) {
+        return ResponseEntity.ok(pedidoService.actualizarEstado(id, dto.getEstado(), authentication));
     }
 
     @PutMapping("/pedidos/{id}/cancelar")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PedidoDTO> cancelarPedido(@PathVariable Long id) {
         return ResponseEntity.ok(pedidoService.cancelarPedido(id));
     }

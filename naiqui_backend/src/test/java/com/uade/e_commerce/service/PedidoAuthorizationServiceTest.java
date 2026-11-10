@@ -13,6 +13,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.uade.e_commerce.model.Pedido;
+import com.uade.e_commerce.model.ItemPedido;
+import com.uade.e_commerce.model.Producto;
 import com.uade.e_commerce.model.Usuario;
 import com.uade.e_commerce.repository.PedidoRepository;
 import com.uade.e_commerce.repository.UsuarioRepository;
@@ -25,8 +27,29 @@ class PedidoAuthorizationServiceTest {
         UsuarioRepository usuarioRepository = mock(UsuarioRepository.class);
         PedidoAuthorizationService service = new PedidoAuthorizationService(pedidoRepository, usuarioRepository);
 
-        assertTrue(service.puedeVerPedido(25L, autenticacion("ROLE_VENDEDOR")));
         assertTrue(service.puedeVerPedido(25L, autenticacion("ROLE_ADMIN")));
+    }
+
+    @Test
+    void vendedorSoloPuedeVerPedidosConProductosPropios() {
+        PedidoRepository pedidoRepository = mock(PedidoRepository.class);
+        UsuarioRepository usuarioRepository = mock(UsuarioRepository.class);
+        Usuario vendedor = new Usuario();
+        vendedor.setEmail("seller@example.com");
+        Usuario otroVendedor = new Usuario();
+        otroVendedor.setEmail("other@example.com");
+        Producto productoPropio = new Producto();
+        productoPropio.setCreador(vendedor);
+        Producto productoAjeno = new Producto();
+        productoAjeno.setCreador(otroVendedor);
+        Pedido pedidoPropio = pedidoConProducto(productoPropio);
+        Pedido pedidoAjeno = pedidoConProducto(productoAjeno);
+        when(pedidoRepository.findById(25L)).thenReturn(Optional.of(pedidoPropio));
+        when(pedidoRepository.findById(26L)).thenReturn(Optional.of(pedidoAjeno));
+        PedidoAuthorizationService service = new PedidoAuthorizationService(pedidoRepository, usuarioRepository);
+
+        assertTrue(service.puedeVerPedido(25L, autenticacion("ROLE_VENDEDOR", "seller@example.com")));
+        assertFalse(service.puedeVerPedido(26L, autenticacion("ROLE_VENDEDOR", "seller@example.com")));
     }
 
     @Test
@@ -57,5 +80,13 @@ class PedidoAuthorizationServiceTest {
     private UsernamePasswordAuthenticationToken autenticacion(String role, String email) {
         return new UsernamePasswordAuthenticationToken(
                 email, null, List.of(new SimpleGrantedAuthority(role)));
+    }
+
+    private Pedido pedidoConProducto(Producto producto) {
+        ItemPedido item = new ItemPedido();
+        item.setProducto(producto);
+        Pedido pedido = new Pedido();
+        pedido.setItems(List.of(item));
+        return pedido;
     }
 }

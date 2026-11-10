@@ -52,6 +52,8 @@ public class AuthService {
         return new LoginResponseDTO(
                 usuario.getId(),
                 usuario.getNombre(),
+                usuario.getApellido(),
+                usuario.getUsername(),
                 usuario.getEmail(),
                 usuario.getRol(),
                 token,
@@ -66,6 +68,8 @@ public class AuthService {
         return new UsuarioSesionDTO(
                 usuario.getId(),
                 usuario.getNombre(),
+                usuario.getApellido(),
+                usuario.getUsername(),
                 usuario.getEmail(),
                 usuario.getRol()
         );
