@@ -33,10 +33,24 @@ El carrito se consulta y modifica por usuario. Para actualizar la cantidad de
 un renglón se usa `PUT /api/usuarios/{usuarioId}/carrito/items/{itemId}` con
 `{"cantidad": 2}`.
 
+El inventario se administra por variante de producto (color y talle). El
+catálogo devuelve cada combinación en `variantes` con su stock disponible; al
+agregar al carrito se debe enviar también `color`, por ejemplo:
+`{"productoId": 1, "color": "Azul", "talle": 40, "cantidad": 1}`.
+La compra vuelve a validar el inventario al confirmarse, descuenta las unidades
+de cada variante y devuelve un error de stock insuficiente si ya no alcanza.
+Cancelar un pedido pendiente repone las unidades de las mismas variantes.
+
 Para confirmar una compra se usa
 `POST /api/usuarios/{usuarioId}/pedidos`, enviando nombre, teléfono, dirección,
 código postal, ciudad, provincia y `metodoPago` (`TARJETA` o `TRANSFERENCIA`).
-El pedido conserva los datos de entrega y vacía el carrito al crearse.
+El pedido conserva los datos de entrega y vacía el carrito al crearse. Usuarios
+ven sus propios pedidos; vendedores y administradores pueden consultar todos
+los pedidos desde `GET /api/pedidos`.
+El detalle incluye los datos de entrega y contacto. Vendedores y
+administradores pueden cambiar el estado a `PENDIENTE`, `CONFIRMADO`,
+`EN_PREPARACION`, `ENVIADO`, `ENTREGADO` o `CANCELADO`; cancelar un pedido
+pendiente repone el stock de sus variantes.
 
 Para bajar todo:
 
@@ -56,3 +70,12 @@ variados por género y precio. Los modelos infantiles se identifican por género
 “Niños” y conservan su categoría deportiva (Running, Urbanas, Fútbol o Training).
 Las ofertas guardan el precio vigente en `precio` y el precio anterior en
 `precio_original`; al reiniciar no se duplican ni se borran los datos existentes.
+
+Los pedidos se muestran del más reciente al más antiguo, con fecha y hora.
+Solo ADMIN puede listar usuarios y actualizar su rol mediante
+`PATCH /api/usuarios/{id}/rol` con `{"rol":"VENDEDOR"}`. Los roles válidos son
+`ADMIN`, `VENDEDOR` y `USUARIO`; el cambio se aplica también a los permisos de
+las sesiones existentes.
+
+Las cuentas demo usan el dominio `@naiqui.com`: `demo@naiqui.com`,
+`vendedor@naiqui.com` y `admin@naiqui.com` (contraseña `1234`).

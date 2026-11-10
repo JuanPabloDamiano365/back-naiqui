@@ -2,11 +2,11 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Spring Boot-ECommerceApplication<tppresencial_1>",
+            "name": "Spring Boot-ECommerceApplication<naiqui_backend>",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "mainClass": "com.uade.e_commerce.ECommerceApplication",
-            "projectName": "tppresencial_1",
+            "projectName": "naiqui_backend",
             "args": "",
             "envFile": "${workspaceFolder}/.env"
         }

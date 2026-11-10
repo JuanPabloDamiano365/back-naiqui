@@ -31,7 +31,7 @@ services:
   # ---------------------------------------------------------------------------
   backend:
     build:
-      context: ./tppresencial_1/tppresencial_1
+      context: ./naiqui_backend
     container_name: naiqui-backend
     restart: unless-stopped
     environment:
