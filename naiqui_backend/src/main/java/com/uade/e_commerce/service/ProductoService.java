@@ -2,10 +2,14 @@ package com.uade.e_commerce.service;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.uade.e_commerce.exception.BusinessException;
 import com.uade.e_commerce.dto.ProductoDTO;
 import com.uade.e_commerce.dto.ProductoVarianteDTO;
 import com.uade.e_commerce.exception.ResourceNotFoundException;
@@ -118,13 +122,59 @@ public class ProductoService {
 
         Producto actualizado = productoRepository.save(producto);
         if (dto.getVariantes() != null) {
-            varianteRepository.deleteAll(varianteRepository.findByProductoIdOrderByColorAscTalleAsc(id));
-            guardarVariantes(actualizado, dto);
+            sincronizarVariantes(actualizado, dto.getVariantes());
         } else {
             actualizarStockTotal(actualizado);
         }
         return toDTO(actualizado);
     }
+
+    private void sincronizarVariantes(Producto producto, List<ProductoVarianteDTO> variantesDTO) {
+        Map<VarianteKey, ProductoVariante> variantesExistentes = new HashMap<>();
+        for (ProductoVariante variante : varianteRepository
+                .findByProductoIdOrderByColorAscTalleAsc(producto.getId())) {
+            variantesExistentes.put(new VarianteKey(variante.getColor(), variante.getTalle()), variante);
+        }
+
+        Map<VarianteKey, ProductoVarianteDTO> variantesSolicitadas = new HashMap<>();
+        for (ProductoVarianteDTO varianteDTO : variantesDTO) {
+            VarianteKey key = new VarianteKey(varianteDTO.getColor(), varianteDTO.getTalle());
+            if (variantesSolicitadas.putIfAbsent(key, varianteDTO) != null) {
+                throw new BusinessException("El producto tiene variantes duplicadas para el mismo color y talle.");
+            }
+        }
+
+        List<ProductoVariante> variantesNuevas = new ArrayList<>();
+        for (Map.Entry<VarianteKey, ProductoVarianteDTO> entry : variantesSolicitadas.entrySet()) {
+            ProductoVarianteDTO varianteDTO = entry.getValue();
+            ProductoVariante varianteExistente = variantesExistentes.remove(entry.getKey());
+            if (varianteExistente == null) {
+                variantesNuevas.add(new ProductoVariante(
+                        null,
+                        producto,
+                        varianteDTO.getColor(),
+                        varianteDTO.getTalle(),
+                        varianteDTO.getStock()));
+            } else {
+                varianteExistente.setColor(varianteDTO.getColor());
+                varianteExistente.setStock(varianteDTO.getStock());
+            }
+        }
+
+        if (!variantesExistentes.isEmpty()) {
+            varianteRepository.deleteAll(variantesExistentes.values());
+            varianteRepository.flush();
+        }
+        varianteRepository.saveAll(variantesNuevas);
+        actualizarStockTotal(producto);
+    }
+
+    private record VarianteKey(String color, Integer talle) {
+        private VarianteKey {
+            color = color.trim().toLowerCase(Locale.ROOT);
+        }
+    }
+
     public void eliminarProducto(Long id) {
         if (!productoRepository.existsById(id)) {
             throw new ResourceNotFoundException("No se encontró el producto con id " + id);

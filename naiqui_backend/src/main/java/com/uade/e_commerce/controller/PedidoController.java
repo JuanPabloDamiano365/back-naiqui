@@ -50,7 +50,7 @@ public class PedidoController {
     }
 
     @PostMapping("/usuarios/{usuarioId}/pedidos")
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<PedidoDTO> crearPedido(@PathVariable Long usuarioId,
                                                   @Valid @RequestBody(required = false) CrearPedidoDTO request) {
         PedidoDTO creado = pedidoService.crearPedidoDesdeCarrito(usuarioId, request);

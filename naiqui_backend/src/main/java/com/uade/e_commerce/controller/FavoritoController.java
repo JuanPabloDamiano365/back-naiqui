@@ -25,20 +25,20 @@ public class FavoritoController {
     }
 
     @GetMapping
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<List<ProductoDTO>> obtenerFavoritos(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(favoritoService.obtenerFavoritos(usuarioId));
     }
 
     @PostMapping("/{productoId}")
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<List<ProductoDTO>> agregarFavorito(@PathVariable Long usuarioId,
                                                              @PathVariable Long productoId) {
         return ResponseEntity.ok(favoritoService.agregarFavorito(usuarioId, productoId));
     }
 
     @DeleteMapping("/{productoId}")
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<List<ProductoDTO>> eliminarFavorito(@PathVariable Long usuarioId,
                                                                @PathVariable Long productoId) {
         return ResponseEntity.ok(favoritoService.eliminarFavorito(usuarioId, productoId));

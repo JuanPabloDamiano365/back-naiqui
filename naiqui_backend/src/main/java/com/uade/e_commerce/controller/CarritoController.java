@@ -29,19 +29,19 @@ public class CarritoController {
     }
 
     @GetMapping
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<CarritoDTO> getCarrito(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(carritoService.buscarCarritoPorUsuario(usuarioId));
     }
     @PostMapping("/items")
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<CarritoDTO> agregarItem(@PathVariable Long usuarioId,
                                                    @Valid @RequestBody AgregarItemCarritoDTO request) {
         return ResponseEntity.ok(carritoService.agregarItem(usuarioId, request));
     }
 
     @PutMapping("/items/{itemId}")
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<CarritoDTO> actualizarCantidad(@PathVariable Long usuarioId,
                                                           @PathVariable Long itemId,
                                                           @Valid @RequestBody ActualizarCantidadCarritoDTO request) {
@@ -49,13 +49,13 @@ public class CarritoController {
     }
 
     @DeleteMapping("/items/{itemId}")
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<CarritoDTO> eliminarItem(@PathVariable Long usuarioId, @PathVariable Long itemId) {
         return ResponseEntity.ok(carritoService.eliminarItem(usuarioId, itemId));
     }
 
     @DeleteMapping
-    @PreAuthorize("@usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
+    @PreAuthorize("hasRole('USUARIO') and @usuarioAuthorizationService.puedeAcceder(#p0, authentication)")
     public ResponseEntity<Void> vaciarCarrito(@PathVariable Long usuarioId) {
         carritoService.vaciarCarrito(usuarioId);
         return ResponseEntity.noContent().build();
