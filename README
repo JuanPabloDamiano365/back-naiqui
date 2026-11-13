@@ -79,3 +79,43 @@ las sesiones existentes.
 
 Las cuentas demo usan el dominio `@naiqui.com`: `demo@naiqui.com`,
 `vendedor@naiqui.com` y `admin@naiqui.com` (contraseña `1234`).
+
+## Autenticación y seguridad
+
+La API usa **Spring Security con JWT**, sin sesiones en el servidor (`STATELESS`).
+
+### Flujo de autenticación
+
+1. El front pide un token CSRF con `GET /api/csrf`. El backend lo guarda en una cookie y también lo devuelve en el body.
+2. El front hace `POST /api/login` con las credenciales, enviando el token CSRF en el header `X-XSRF-TOKEN`.
+3. Si son válidas, el backend genera un JWT y lo envía en una **cookie HttpOnly** llamada `naiqui_auth` (dura 8 horas). JavaScript no puede leer esa cookie.
+4. En cada petición, el navegador adjunta la cookie automáticamente. `JwtAuthenticationFilter` la lee (o lee el header `Authorization: Bearer`), valida el token y carga el usuario y su rol en el `SecurityContext`.
+5. `SecurityConfig` decide si ese rol puede acceder al endpoint pedido.
+6. `GET /api/me` devuelve el usuario de la sesión actual; el front lo usa para restaurar la sesión al recargar la página.
+7. `POST /api/logout` expira la cookie.
+
+### Endpoints públicos (sin login)
+
+| Método | Ruta |
+|---|---|
+| GET | `/api/csrf` |
+| POST | `/api/login`, `/api/logout` |
+| POST | `/api/usuarios` (registro) |
+| GET | `/api/productos/**`, `/api/categorias/**`, `/uploads/**` |
+
+El resto de los endpoints requiere estar autenticado.
+
+### Permisos por rol (resumen)
+
+| Rol | Puede |
+|---|---|
+| `USUARIO` | Gestionar su carrito y favoritos, comprar y ver sus pedidos |
+| `VENDEDOR` | Crear, editar y borrar productos y categorías; ver y actualizar pedidos |
+| `ADMIN` | Todo lo del vendedor, además de gestionar usuarios y roles |
+
+Sin autenticación válida la API responde con error; con autenticación pero sin el rol necesario responde `403`.
+
+### CORS
+
+Los orígenes permitidos se configuran con la propiedad `naiqui.cors.allowed-origins`
+(por defecto `http://localhost:5173`). Se permiten credenciales (cookies) y el header `X-XSRF-TOKEN`.
